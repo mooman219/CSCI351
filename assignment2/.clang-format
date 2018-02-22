@@ -1,0 +1,9 @@
+AlignTrailingComments: true
+AllowShortIfStatementsOnASingleLine: true
+BasedOnStyle: LLVM
+BreakBeforeBraces: Attach
+ColumnLimit: 0
+IndentCaseLabels: true
+IndentWidth: 4
+SortIncludes: true
+UseTab: Never
