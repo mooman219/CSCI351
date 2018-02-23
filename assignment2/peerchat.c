@@ -166,6 +166,7 @@ void peerchat_handle_input(Peerchat *state) {
         }
         // Print all active users
         else if (starts_with(line, "/who")) {
+            user_print(&state->self);
             userlist_print_by_state(&state->peers, USERSTATE_ACTIVE);
         }
         // Disconnect from all peers
