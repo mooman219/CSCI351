@@ -143,6 +143,9 @@ void peerchat_handle_input(Peerchat *state) {
         else if (starts_with(line, "/age")) {
             uint8_t age;
             if (sscanf(line, "/age %hhu", &age) == 1) {
+                if (state->self.age == age) {
+                    user_print(&state->self);
+                }
                 userlist_print_by_age(&state->peers, age);
             } else {
                 printf("[Expected: /age <number>]\n");
@@ -153,6 +156,9 @@ void peerchat_handle_input(Peerchat *state) {
         else if (starts_with(line, "/zip")) {
             uint32_t zip_code;
             if (sscanf(line, "/zip %u", &zip_code) == 1) {
+                if (state->self.zip_code == zip_code) {
+                    user_print(&state->self);
+                }
                 userlist_print_by_zip(&state->peers, zip_code);
             } else {
                 printf("[Expected: /zip <number>]\n");
