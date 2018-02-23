@@ -45,6 +45,15 @@ void userlist_print_by_zip(UserList *list, uint32_t zip_code) {
     }
 }
 
+void userlist_print_by_state(UserList *list, uint8_t state) {
+    for (uint32_t i = 0; i < list->length; i++) {
+        User *user = &list->users[i];
+        if (user->state == state) {
+            user_print(&list->users[i]);
+        }
+    }
+}
+
 bool userlist_has_user(UserList *list, uint16_t port, uint32_t address) {
     for (uint32_t i = 0; i < list->length; i++) {
         User *user = &list->users[i];

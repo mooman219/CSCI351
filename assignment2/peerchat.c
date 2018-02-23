@@ -164,6 +164,10 @@ void peerchat_handle_input(Peerchat *state) {
                 printf("[Expected: /zip <number>]\n");
             }
         }
+        // Print all active users
+        else if (starts_with(line, "/who")) {
+            userlist_print_by_state(&state->peers, USERSTATE_ACTIVE);
+        }
         // Disconnect from all peers
         else if (starts_with(line, "/leave")) {
             userlist_remove_all(&state->peers);

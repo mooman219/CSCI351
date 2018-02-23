@@ -61,6 +61,11 @@ void userlist_print_by_age(UserList *list, uint8_t age);
 void userlist_print_by_zip(UserList *list, uint32_t zip_code);
 
 /**
+ * Prints users matching the given state.
+ */
+void userlist_print_by_state(UserList *list, uint8_t state);
+
+/**
  * Returns true if the userlist has a peer with the given port and address.
  */
 bool userlist_has_user(UserList *list, uint16_t port, uint32_t address);
