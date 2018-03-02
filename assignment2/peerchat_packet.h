@@ -27,27 +27,21 @@ typedef struct
     uint16_t port;
     uint32_t zip_code;
     uint8_t age;
-} PayloadIdentity;
-
-typedef struct
-{
     struct {
         uint32_t address;
         uint16_t port;
     } peers[MAX_PEERS];
-    uint32_t length;
-} PayloadPeers;
+    uint32_t peer_length;
+} PayloadIdentity;
 
 typedef enum {
     PAYLOAD_MESSAGE,
-    PAYLOAD_IDENTITY,
-    PAYLOAD_PEERS
+    PAYLOAD_IDENTITY
 } PayloadType;
 
 typedef union {
     PayloadMessage message;
     PayloadIdentity identity;
-    PayloadPeers peers;
 } PacketPayload;
 
 typedef struct
@@ -72,14 +66,7 @@ Packet *packet_message(char *message);
  * 
  * Successive calls to this function overwrite the returned packet.
  */
-Packet *packet_identity(User *user);
-
-/**
- * Prepares a temporary packet with the peers payload.
- * 
- * Successive calls to this function overwrite the returned packet.
- */
-Packet *packet_peers(UserList *list, int32_t ignore_socket);
+Packet *packet_identity(User *user, UserList *list, int32_t ignore_socket);
 
 /**
  * Sends a packet to the user.

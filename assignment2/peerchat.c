@@ -61,7 +61,8 @@ void peerchat_accept(Peerchat *state, int32_t accept_socket) {
     // Add the peer to the known peers
     userlist_add(&state->peers, &peer);
     // Send our identity to peer
-    packet_send(packet_identity(&state->self), &peer);
+    Packet *identity = packet_identity(&state->self, &state->peers, peer_socket);
+    packet_send(identity, &peer);
 }
 
 /**
@@ -92,9 +93,10 @@ User *peerchat_connect(Peerchat *state, uint16_t port, uint32_t address) {
     }
     // Peer handshake
     User peer;
-    user_set_pending(&peer, sock, address);            // Mark the peer as pending
-    packet_send(packet_identity(&state->self), &peer); // Send our identity to peer
-    return userlist_add(&state->peers, &peer);         // Add the peer to the known peers
+    Packet *identity = packet_identity(&state->self, &state->peers, sock);
+    user_set_pending(&peer, sock, address);    // Mark the peer as pending
+    packet_send(identity, &peer);              // Send our identity to peer
+    return userlist_add(&state->peers, &peer); // Add the peer to the known peers
 }
 
 /**
@@ -210,21 +212,19 @@ void peerchat_handle_peer_data(Peerchat *state, int32_t peer_socket) {
         case PAYLOAD_IDENTITY:
             // Only allow pending users to identify
             if (peer->state == USERSTATE_PENDING) {
-                packet_send(packet_peers(&state->peers, peer->socket), peer);
+                PayloadIdentity identity = packet.payload.identity;
                 user_set_active(
                     peer,
-                    packet.payload.identity.username,
-                    packet.payload.identity.port,
-                    packet.payload.identity.zip_code,
-                    packet.payload.identity.age);
-            }
-            break;
-        case PAYLOAD_PEERS:
-            for (uint32_t i = 0; i < packet.payload.peers.length; i++) {
-                uint16_t port = packet.payload.peers.peers[i].port;
-                uint32_t address = packet.payload.peers.peers[i].address;
-                if (!userlist_has_user(&state->peers, port, address)) {
-                    peerchat_connect(state, port, address);
+                    identity.username,
+                    identity.port,
+                    identity.zip_code,
+                    identity.age);
+                for (uint32_t i = 0; i < identity.peer_length; i++) {
+                    uint16_t port = identity.peers[i].port;
+                    uint32_t address = identity.peers[i].address;
+                    if (!userlist_has_user(&state->peers, port, address)) {
+                        peerchat_connect(state, port, address);
+                    }
                 }
             }
             break;
