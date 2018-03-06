@@ -39,7 +39,6 @@ Packet *packet_identity(User *user, UserList *list, int32_t ignore_socket) {
             packet_global_temp.payload.identity.peers[x].address = user->address;
             packet_global_temp.payload.identity.peers[x].port = user->port;
             x += 1;
-        } else {
         }
     }
     packet_global_temp.payload.identity.peer_length = x;
