@@ -147,7 +147,7 @@ void user_set_active(User *user, char *username, uint16_t port, uint32_t zip_cod
     user->port = port;
     user->zip_code = zip_code;
     user->age = age;
-    printf("[%s@%s has joined]\n", user->username, ip4_to_string(user->address));
+    printf("[%s@%s has joined (Zip: %u, Age: %hhu)]\n", user->username, ip4_to_string(user->address), zip_code, age);
 }
 
 void user_parse_arguments(User *state, int argc, char *argv[]) {

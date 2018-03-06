@@ -204,7 +204,7 @@ void peerchat_handle_peer_data(Peerchat *state, int32_t peer_socket) {
             // Only display messages from active users
             if (peer->state == USERSTATE_ACTIVE) {
                 printf(
-                    "%s: %s\n",
+                    "<%s> %s\n",
                     peer->username,
                     packet.payload.message.message);
             }
