@@ -213,6 +213,9 @@ void peerchat_handle_peer_data(Peerchat *state, int32_t peer_socket) {
             // Only allow pending users to identify
             if (peer->state == USERSTATE_PENDING) {
                 PayloadIdentity identity = packet.payload.identity;
+                if (state->peers.length == 1) {
+                    printf("[Joined chat with %u members]\n", identity.peer_length + 1);
+                }
                 user_set_active(
                     peer,
                     identity.username,
