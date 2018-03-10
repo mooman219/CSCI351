@@ -46,7 +46,7 @@ typedef union {
 
 typedef struct
 {
-    uint8_t type;
+    uint32_t type;
     PacketPayload payload;
 } Packet;
 

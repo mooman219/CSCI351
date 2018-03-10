@@ -17,7 +17,7 @@
 
 #define MAX_PEERS 32
 #define USERNAME_LENGTH 32
-#define MESSAGE_LENGTH 128
+#define MESSAGE_LENGTH 256
 #define DEFAULT_PORT 8129
 
 ///////////////////////////////////////////////////////////

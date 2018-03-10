@@ -203,6 +203,7 @@ void peerchat_handle_peer_data(Peerchat *state, int32_t peer_socket) {
         case PAYLOAD_MESSAGE:
             // Only display messages from active users
             if (peer->state == USERSTATE_ACTIVE) {
+                packet.payload.message.message[MESSAGE_LENGTH - 1] = '\0';
                 printf(
                     "<%s> %s\n",
                     peer->username,
@@ -222,6 +223,7 @@ void peerchat_handle_peer_data(Peerchat *state, int32_t peer_socket) {
                     identity.port,
                     identity.zip_code,
                     identity.age);
+                identity.peer_length = identity.peer_length > MAX_PEERS ? MAX_PEERS : identity.peer_length;
                 for (uint32_t i = 0; i < identity.peer_length; i++) {
                     uint16_t port = identity.peers[i].port;
                     uint32_t address = identity.peers[i].address;
