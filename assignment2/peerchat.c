@@ -263,12 +263,6 @@ int main(int argc, char *argv[]) {
         printf("[Error: Unable to create accept socket]\n");
         exit(EXIT_FAILURE);
     }
-    // Configure the socket to allow multiple connections
-    int32_t option_true = true;
-    if (setsockopt(accept_socket, SOL_SOCKET, SO_REUSEADDR, (char *)&option_true, sizeof(int32_t)) < 0) {
-        printf("[Error: Unable to configure socket]\n");
-        exit(EXIT_FAILURE);
-    }
     // Configure socket address
     struct sockaddr_in accept_address;
     memset(&accept_address, 0, sizeof(accept_address)); // 0 out the address
@@ -277,7 +271,7 @@ int main(int argc, char *argv[]) {
     accept_address.sin_addr.s_addr = htonl(INADDR_ANY);
     // Bind the socket address to our accept socket
     if (bind(accept_socket, (struct sockaddr *)&accept_address, sizeof(accept_address)) < 0) {
-        printf("[Error: Unable to bind socket]\n");
+        printf("[Error: Unable to bind socket, port already in use.]\n");
         exit(EXIT_FAILURE);
     }
     // Specify how many pending connections can be buffered
