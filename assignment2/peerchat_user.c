@@ -28,8 +28,7 @@ void userlist_initialize(UserList *list, FileDescriptorSet *master_fds) {
 void userlist_print_by_age(UserList *list, uint8_t age) {
     for (uint32_t i = 0; i < list->length; i++) {
         User *user = &list->users[i];
-        // Only include active users in the output
-        if (user->state == USERSTATE_ACTIVE && user->age == age) {
+        if (user->age == age) {
             user_print(user);
         }
     }
@@ -38,22 +37,17 @@ void userlist_print_by_age(UserList *list, uint8_t age) {
 void userlist_print_by_zip(UserList *list, uint32_t zip_code) {
     for (uint32_t i = 0; i < list->length; i++) {
         User *user = &list->users[i];
-        // Only include active users in the output
-        if (user->state == USERSTATE_ACTIVE && user->zip_code == zip_code) {
+        if (user->zip_code == zip_code) {
             user_print(&list->users[i]);
         }
     }
 }
 
-void userlist_print_by_state(UserList *list, uint8_t state) {
+void userlist_print(UserList *list) {
     for (uint32_t i = 0; i < list->length; i++) {
-        User *user = &list->users[i];
-        if (user->state == state) {
-            user_print(&list->users[i]);
-        }
+        user_print(&list->users[i]);
     }
 }
-
 bool userlist_has_user(UserList *list, uint16_t port, uint32_t address) {
     for (uint32_t i = 0; i < list->length; i++) {
         User *user = &list->users[i];
@@ -74,15 +68,23 @@ User *userlist_get_by_socket(UserList *list, int32_t socket) {
     return NULL;
 }
 
-User *userlist_add(UserList *list, User *user) {
-    if (list->length == MAX_PEERS) {
+User *userlist_add(UserList *list, int32_t socket, uint16_t port, uint32_t address) {
+    if (list->length == MAX_PEERS - 1) {
         printf("[Warning: Attempted to add user while at capacity]\n");
         return NULL;
     }
-    filedescriptorset_add(list->master_fds, user->socket);
+    // If the address is 0.0.0.0, set it to 127.0.0.1 (network order)
+    if (address == 0) {
+        address = 0x100007F;
+    }
+    // Get the peer
     User *slot = &list->users[list->length];
-    memcpy(slot, user, sizeof(User));
+    slot->socket = socket;
+    slot->port = port;
+    slot->address = address;
     list->length += 1;
+    // Add the file descriptor
+    filedescriptorset_add(list->master_fds, socket);
     return slot;
 }
 
@@ -90,10 +92,7 @@ void userlist_remove_by_socket(UserList *list, int32_t socket) {
     for (uint32_t i = 0; i < list->length; i++) {
         User *user = &list->users[i];
         if (user->socket == socket) {
-            // Only print leave message for active users
-            if (user->state == USERSTATE_ACTIVE) {
-                printf("[%s@%s left the chat]\n", user->username, ip4_to_string(user->address));
-            }
+            printf("[%s@%s left the chat]\n", user->username, ip4_to_string(user->address));
             // Disconnect the user
             close(user->socket);
             filedescriptorset_remove(list->master_fds, user->socket);
@@ -108,10 +107,7 @@ void userlist_remove_by_socket(UserList *list, int32_t socket) {
 void userlist_remove_all(UserList *list) {
     for (uint32_t i = 0; i < list->length; i++) {
         User user = list->users[i];
-        // Only print leave message for active users
-        if (user.state == USERSTATE_ACTIVE) {
-            printf("[%s@%s left the chat]\n", user.username, ip4_to_string(user.address));
-        }
+        printf("[%s@%s left the chat]\n", user.username, ip4_to_string(user.address));
         // Disconnect the user
         close(user.socket);
         filedescriptorset_remove(list->master_fds, user.socket);
@@ -129,25 +125,6 @@ void user_print(User *state) {
         state->username,
         state->zip_code,
         state->age);
-}
-
-void user_set_pending(User *user, int32_t socket, uint32_t address) {
-    // If the address is 0.0.0.0, set it to 127.0.0.1 (network order)
-    if (address == 0) {
-        address = 0x100007F;
-    }
-    user->state = USERSTATE_PENDING;
-    user->socket = socket;
-    user->address = address;
-}
-
-void user_set_active(User *user, char *username, uint16_t port, uint32_t zip_code, uint8_t age) {
-    strncpy(user->username, username, USERNAME_LENGTH);
-    user->state = USERSTATE_ACTIVE;
-    user->port = port;
-    user->zip_code = zip_code;
-    user->age = age;
-    printf("[%s@%s has joined (Zip: %u, Age: %hhu)]\n", user->username, ip4_to_string(user->address), zip_code, age);
 }
 
 void user_parse_arguments(User *state, int argc, char *argv[]) {

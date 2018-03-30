@@ -33,6 +33,11 @@ typedef struct
 ///////////////////////////////////////////////////////////
 
 /**
+ * Handle reading data in from a peer.
+ */
+void peerchat_handle_peer_data(Peerchat *state, int32_t peer_socket);
+
+/**
  * Initializes a peerchat.
  */
 void peerchat_initialize(Peerchat *state) {
@@ -54,22 +59,23 @@ void peerchat_accept(Peerchat *state, int32_t accept_socket) {
         printf("[Error: Accept failure - Unable to accept peer connection]\n");
         exit(EXIT_FAILURE);
     }
-
-    // Mark the peer as pending
-    User peer;
-    user_set_pending(&peer, peer_socket, address.sin_addr.s_addr);
-    // Add the peer to the known peers
-    userlist_add(&state->peers, &peer);
+    // Add the peer
+    User *peer = userlist_add(&state->peers, peer_socket, 0, address.sin_addr.s_addr);
     // Send our identity to peer
     Packet *identity = packet_identity(&state->self, &state->peers, peer_socket);
-    packet_send(identity, &peer);
+    packet_send(identity, peer);
+    // Get their identity
+    peerchat_handle_peer_data(state, peer_socket);
 }
 
 /**
  * Establish a connection the target address/port. Returns the added peer or
  * NULL if there was an error.
  */
-User *peerchat_connect(Peerchat *state, uint16_t port, uint32_t address) {
+void peerchat_connect(Peerchat *state, uint16_t port, uint32_t address) {
+    if (userlist_has_user(&state->peers, port, address)) {
+        return;
+    }
     // Setup socket we're using to connect
     int32_t sock = socket(
         AF_INET,     // Use IPv4 addresses
@@ -79,7 +85,7 @@ User *peerchat_connect(Peerchat *state, uint16_t port, uint32_t address) {
     // Fail if we were unable to create the socket
     if (sock < 0) {
         printf("[Join Failure - Unable to create socket]\n");
-        return NULL;
+        return;
     }
     // Destination setup
     struct sockaddr_in destination;
@@ -89,14 +95,13 @@ User *peerchat_connect(Peerchat *state, uint16_t port, uint32_t address) {
     // Connect to destination
     if (connect(sock, (struct sockaddr *)&destination, sizeof(destination)) < 0) {
         printf("[Join Failure - Unable to establish connection]\n");
-        return NULL;
+        return;
     }
-    // Peer handshake
-    User peer;
+    // Add the peer to the known peers
+    User *peer = userlist_add(&state->peers, sock, port, address);
+    // Send our identity
     Packet *identity = packet_identity(&state->self, &state->peers, sock);
-    user_set_pending(&peer, sock, address);    // Mark the peer as pending
-    packet_send(identity, &peer);              // Send our identity to peer
-    return userlist_add(&state->peers, &peer); // Add the peer to the known peers
+    packet_send(identity, peer);
 }
 
 /**
@@ -169,7 +174,7 @@ void peerchat_handle_input(Peerchat *state) {
         // Print all active users
         else if (starts_with(line, "/who")) {
             user_print(&state->self);
-            userlist_print_by_state(&state->peers, USERSTATE_ACTIVE);
+            userlist_print(&state->peers);
         }
         // Disconnect from all peers
         else if (starts_with(line, "/leave")) {
@@ -183,9 +188,6 @@ void peerchat_handle_input(Peerchat *state) {
     }
 }
 
-/**
- * Handle reading data in from a peer.
- */
 void peerchat_handle_peer_data(Peerchat *state, int32_t peer_socket) {
     // Find the associated peer
     User *peer = userlist_get_by_socket(&state->peers, peer_socket);
@@ -200,39 +202,32 @@ void peerchat_handle_peer_data(Peerchat *state, int32_t peer_socket) {
     }
     // Otherwise, we have data to parse from the client.
     switch (packet.type) {
-        case PAYLOAD_MESSAGE:
-            // Only display messages from active users
-            if (peer->state == USERSTATE_ACTIVE) {
-                packet.payload.message.message[MESSAGE_LENGTH - 1] = '\0';
-                printf(
-                    "<%s> %s\n",
-                    peer->username,
-                    packet.payload.message.message);
+        case PAYLOAD_MESSAGE: {
+            packet.payload.message.message[MESSAGE_LENGTH - 1] = '\0';
+            printf(
+                "<%s> %s\n",
+                peer->username,
+                packet.payload.message.message);
+            break;
+        }
+        case PAYLOAD_IDENTITY: {
+            PayloadIdentity identity = packet.payload.identity;
+            if (state->peers.length == 1) {
+                printf("[Joined chat with %u members]\n", identity.peer_length + 1);
+            }
+            strncpy(peer->username, identity.username, USERNAME_LENGTH);
+            peer->port = identity.port;
+            peer->zip_code = identity.zip_code;
+            peer->age = identity.age;
+            printf("[%s@%s has joined (Zip: %u, Age: %hhu)]\n", peer->username, ip4_to_string(peer->address), peer->zip_code, peer->age);
+            identity.peer_length = identity.peer_length > MAX_PEERS ? MAX_PEERS : identity.peer_length;
+            for (uint32_t i = 0; i < identity.peer_length; i++) {
+                uint16_t port = identity.peers[i].port;
+                uint32_t address = identity.peers[i].address;
+                peerchat_connect(state, port, address);
             }
             break;
-        case PAYLOAD_IDENTITY:
-            // Only allow pending users to identify
-            if (peer->state == USERSTATE_PENDING) {
-                PayloadIdentity identity = packet.payload.identity;
-                if (state->peers.length == 1) {
-                    printf("[Joined chat with %u members]\n", identity.peer_length + 1);
-                }
-                user_set_active(
-                    peer,
-                    identity.username,
-                    identity.port,
-                    identity.zip_code,
-                    identity.age);
-                identity.peer_length = identity.peer_length > MAX_PEERS ? MAX_PEERS : identity.peer_length;
-                for (uint32_t i = 0; i < identity.peer_length; i++) {
-                    uint16_t port = identity.peers[i].port;
-                    uint32_t address = identity.peers[i].address;
-                    if (!userlist_has_user(&state->peers, port, address)) {
-                        peerchat_connect(state, port, address);
-                    }
-                }
-            }
-            break;
+        }
     }
 }
 

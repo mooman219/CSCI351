@@ -35,7 +35,7 @@ Packet *packet_identity(User *user, UserList *list, int32_t ignore_socket) {
     uint32_t x = 0;
     for (uint32_t i = 0; i < list->length; i++) {
         User *user = &list->users[i];
-        if (user->state == USERSTATE_ACTIVE && user->socket != ignore_socket) {
+        if (user->socket != ignore_socket) {
             packet_global_temp.payload.identity.peers[x].address = user->address;
             packet_global_temp.payload.identity.peers[x].port = user->port;
             x += 1;
