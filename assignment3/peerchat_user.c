@@ -78,9 +78,16 @@ User *userlist_add(UserList *list, char *username, uint16_t port, uint32_t addre
     return slot;
 }
 
-// printf("[%s@%s left the chat]\n", user->username, ip4_to_string(user->address));
-// list->length -= 1;
-// *user = list->users[list->length];
+void userlist_remove_by_connection(UserList *list, uint16_t port, uint32_t address) {
+    for (uint32_t i = 0; i < list->length; i++) {
+        User *user = &list->users[i];
+        if (user->port == port && user->address == address) {
+            printf("[%s@%s:%hu left the chat]\n", user->username, ip4_to_string(address), port);
+            list->length -= 1;
+            *user = list->users[list->length];
+        }
+    }
+}
 
 void userlist_remove_all(UserList *list) {
     for (uint32_t i = 0; i < list->length; i++) {

@@ -88,6 +88,10 @@ void peerchat_handle_input(Peerchat *state) {
     if (line_length > 0) {
         // Disconnect from all peers and exit the program
         if (starts_with(line, "/exit")) {
+            // Send leave packet
+            PacketLeave *packet = packet_leave(&state->self);
+            packet_send_all(state->socket, packet, sizeof(PacketLeave), &state->peers);
+            // Cleanup userlist
             userlist_remove_all(&state->peers);
             printf("[Exited]\n");
             exit(EXIT_SUCCESS);
@@ -148,6 +152,10 @@ void peerchat_handle_input(Peerchat *state) {
         }
         // Disconnect from all peers
         else if (starts_with(line, "/leave")) {
+            // Send leave packet
+            PacketLeave *packet = packet_leave(&state->self);
+            packet_send_all(state->socket, packet, sizeof(PacketLeave), &state->peers);
+            // Cleanup userlist
             userlist_remove_all(&state->peers);
             printf("[Left chat]\n");
         }
@@ -221,9 +229,8 @@ void peerchat_read_join(Peerchat *state, PacketJoin *packet, uint32_t address) {
 }
 
 void peerchat_read_leave(Peerchat *state, PacketLeave *packet, uint32_t address) {
-    // Display leave message
-    printf("[%s@%s left the chat]\n", packet->username, ip4_to_string(address));
-    // TODO: Remove the peer.
+    // Remove the peer
+    userlist_remove_by_connection(&state->peers, packet->port, address);
 }
 
 ///////////////////////////////////////////////////////////

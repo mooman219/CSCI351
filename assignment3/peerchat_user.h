@@ -69,6 +69,11 @@ bool userlist_has_user(UserList *list, uint16_t port, uint32_t address);
 User *userlist_add(UserList *list, char *username, uint16_t port, uint32_t address, uint32_t zip_code, uint8_t age);
 
 /**
+ * Removes the user with the matching connection parameters from the userlist.
+ */
+void userlist_remove_by_connection(UserList *list, uint16_t port, uint32_t address);
+
+/**
  * Disconnects and removes all users from the userlist.
  */
 void userlist_remove_all(UserList *list);
