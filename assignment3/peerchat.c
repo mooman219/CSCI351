@@ -101,7 +101,7 @@ void peerchat_handle_input(Peerchat *state) {
         else if (starts_with(line, "/join")) {
             if (state->peers.length > 0) {
                 // Fail if we're already connected.
-                printf("[Join Failure - Already connected to peers]\n");
+                printf("[Join Failure - Already connected to %u peers]\n", state->peers.length);
                 return;
             }
             // Parse the input line
